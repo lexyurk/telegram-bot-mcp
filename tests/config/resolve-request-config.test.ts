@@ -11,7 +11,7 @@ describe("resolveRequestConfig", () => {
         defaultChatId: "runtime-chat",
       },
       headerConfig: {},
-      transportKind: "stdio",
+      transportKind: "http",
     });
 
     expect(resolved.botToken).toBe("runtime-token");
@@ -56,7 +56,7 @@ describe("resolveRequestConfig", () => {
       resolveRequestConfig({
         runtime: {},
         headerConfig: {},
-        transportKind: "stdio",
+        transportKind: "http",
       }),
     ).toThrow(ConfigError);
   });
@@ -68,7 +68,7 @@ describe("resolveRequestConfig", () => {
           botToken: "runtime-token",
         },
         headerConfig: {},
-        transportKind: "stdio",
+        transportKind: "http",
       }),
     ).toThrow(ConfigError);
   });

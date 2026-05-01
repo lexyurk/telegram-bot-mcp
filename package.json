@@ -31,7 +31,7 @@
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist coverage",
-    "dev": "tsx --watch src/bin/telegram-bot-mcp.ts",
+    "dev": "TELEGRAM_BOT_MCP_TRANSPORT=http tsx --watch src/bin/telegram-bot-mcp.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

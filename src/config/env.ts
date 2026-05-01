@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 import { ConfigError } from "../errors/config-error.js";
-import type { LogLevel, RuntimeConfig, TransportMode } from "../types/config.js";
+import type { LogLevel, RuntimeConfig } from "../types/config.js";
 
-const transportModes = ["stdio", "http"] as const satisfies readonly TransportMode[];
 const logLevels = [
   "fatal",
   "error",
@@ -16,7 +15,6 @@ const logLevels = [
 const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().trim().min(1).optional(),
   TELEGRAM_DEFAULT_CHAT_ID: z.string().trim().min(1).optional(),
-  TELEGRAM_BOT_MCP_TRANSPORT: z.enum(transportModes).default("stdio"),
   TELEGRAM_BOT_MCP_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   TELEGRAM_BOT_MCP_LOG_LEVEL: z.enum(logLevels).default("info"),
 });
@@ -36,7 +34,7 @@ export function loadRuntimeConfig(
   }
 
   return {
-    transport: parsed.data.TELEGRAM_BOT_MCP_TRANSPORT,
+    transport: "http",
     port: parsed.data.TELEGRAM_BOT_MCP_PORT,
     logLevel: parsed.data.TELEGRAM_BOT_MCP_LOG_LEVEL,
     ...(parsed.data.TELEGRAM_BOT_TOKEN

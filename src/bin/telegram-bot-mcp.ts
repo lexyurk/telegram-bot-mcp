@@ -4,7 +4,6 @@ import { loadRuntimeConfig } from "../config/env.js";
 import { createLogger } from "../logging/logger.js";
 import { createServerDependencies } from "../server/create-server.js";
 import { startHttpServer } from "../transports/http.js";
-import { startStdioServer } from "../transports/stdio.js";
 import { addShutdownHandler } from "../utils/shutdown.js";
 
 async function main(): Promise<void> {
@@ -19,18 +18,7 @@ async function main(): Promise<void> {
     await services.telegramServiceRegistry.shutdownAll();
   });
 
-  switch (runtimeConfig.transport) {
-    case "stdio":
-      await startStdioServer(services);
-      return;
-    case "http":
-      await startHttpServer(services);
-      return;
-    default: {
-      const exhaustiveCheck: never = runtimeConfig.transport;
-      throw new Error(`Unsupported transport: ${String(exhaustiveCheck)}`);
-    }
-  }
+  await startHttpServer(services);
 }
 
 main().catch((error: unknown) => {

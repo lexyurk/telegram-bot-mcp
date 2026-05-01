@@ -201,7 +201,7 @@ describe("tool handlers", () => {
           resolvedConfig: createResolvedConfig({
             botToken: "env-token",
             effectiveChatId: "env-chat",
-            transportKind: "stdio",
+            transportKind: "http",
           }),
           service: createMinimalService({
             sendMessage,

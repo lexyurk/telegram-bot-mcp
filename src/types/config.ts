@@ -1,4 +1,4 @@
-export type TransportMode = "stdio" | "http";
+export type TransportMode = "http";
 
 export type LogLevel = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 

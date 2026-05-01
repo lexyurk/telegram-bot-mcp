@@ -30,12 +30,9 @@ Every tool accepts an optional `chatId`. When provided, it overrides the default
 
 ### Transport modes
 
-This package supports two MCP transports:
+This package is designed for **HTTP MCP transport** so Telegram configuration can be provided through request headers.
 
-1. **stdio** — best for local MCP clients and `npx` usage
-2. **HTTP** — required when you want to pass Telegram configuration through request headers
-
-> Important: stdio does not support request headers. If you want header-based configuration, use HTTP transport mode.
+> Important: this server is header-driven. Use HTTP transport mode.
 
 ## Installation
 
@@ -63,7 +60,7 @@ The server reads these variables:
 ```bash
 TELEGRAM_BOT_TOKEN=123456789:your-bot-token
 TELEGRAM_DEFAULT_CHAT_ID=123456789
-TELEGRAM_BOT_MCP_TRANSPORT=stdio
+TELEGRAM_BOT_MCP_TRANSPORT=http
 TELEGRAM_BOT_MCP_PORT=3000
 TELEGRAM_BOT_MCP_LOG_LEVEL=info
 ```
@@ -97,34 +94,6 @@ Aliases also accepted:
 
 ## Usage
 
-### Stdio mode
-
-This is the default mode and is the easiest path for `npx`.
-
-```bash
-TELEGRAM_BOT_TOKEN=123456789:your-bot-token \
-TELEGRAM_DEFAULT_CHAT_ID=123456789 \
-TELEGRAM_BOT_MCP_TRANSPORT=stdio \
-npx telegram-bot-mcp
-```
-
-Example MCP client configuration:
-
-```json
-{
-  "mcpServers": {
-    "telegram-bot-mcp": {
-      "command": "npx",
-      "args": ["telegram-bot-mcp"],
-      "env": {
-        "TELEGRAM_BOT_TOKEN": "123456789:your-bot-token",
-        "TELEGRAM_DEFAULT_CHAT_ID": "123456789"
-      }
-    }
-  }
-}
-```
-
 ### HTTP mode
 
 ```bash
@@ -132,6 +101,23 @@ TELEGRAM_BOT_MCP_TRANSPORT=http \
 TELEGRAM_BOT_MCP_PORT=3000 \
 npx telegram-bot-mcp
 ```
+Example MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "telegram-bot-mcp": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "x-telegram-bot-token": "123456789:your-bot-token",
+        "x-telegram-default-chat-id": "123456789"
+      }
+    }
+  }
+}
+```
+
 
 Then provide headers on requests:
 
@@ -207,7 +193,7 @@ Then send any message to your bot. The tool prints the chat ID and exits.
 - Pending replies are stored **in memory**.
 - If the process restarts, pending waits are lost.
 - Reply matching is based on Telegram `reply_to_message.message_id` and chat ID validation.
-- The server keeps logs on **stderr** so stdio MCP output remains clean.
+- The server keeps logs on **stderr**.
 - Telegram polling is started lazily when `ask_user` is used.
 - Only one polling consumer should use the same bot token at a time.
 
