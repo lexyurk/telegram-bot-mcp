@@ -253,6 +253,10 @@ export class TelegramService {
         if (task) {
           void task.catch((error: unknown) => {
             this.logger.error({ error }, "Telegram polling runner crashed.");
+            this.runner = undefined;
+            if (this.pollingStartup === startup) {
+              this.pollingStartup = undefined;
+            }
           });
         }
       } catch (error: unknown) {

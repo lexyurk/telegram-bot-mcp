@@ -1,28 +1,17 @@
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type {
   CallToolResult,
-  RequestInfo,
   ServerNotification,
   ServerRequest,
 } from "@modelcontextprotocol/sdk/types.js";
 
 import type { AskUserArgs } from "../types/tool-args.js";
 import type { ToolServices } from "../server/tool-context.js";
-import { resolveToolRequestConfig } from "./shared.js";
-
-function withOptionalRequestInfo(
-  requestInfo:
-    | RequestHandlerExtra<ServerRequest, ServerNotification>["requestInfo"]
-    | undefined,
-): {
-  requestInfo?: RequestInfo;
-} {
-  if (requestInfo === undefined) {
-    return {};
-  }
-
-  return { requestInfo };
-}
+import {
+  resolveToolRequestConfig,
+  withOptionalRequestInfo,
+  withOptionalToolChatId,
+} from "./shared.js";
 
 function withOptionalProgressHandler(
   onProgress: ReturnType<typeof createProgressNotifier>,
@@ -34,16 +23,6 @@ function withOptionalProgressHandler(
   }
 
   return { onProgress };
-}
-
-function withOptionalToolChatId(
-  toolChatId: string | undefined,
-): { toolChatId?: string } {
-  if (toolChatId === undefined) {
-    return {};
-  }
-
-  return { toolChatId };
 }
 
 function createProgressNotifier(

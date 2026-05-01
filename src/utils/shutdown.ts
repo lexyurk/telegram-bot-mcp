@@ -2,8 +2,20 @@ const shutdownHandlers = new Set<() => void | Promise<void>>();
 let registered = false;
 
 async function runHandlers(): Promise<void> {
+  const errors: unknown[] = [];
+
   for (const handler of shutdownHandlers) {
-    await handler();
+    try {
+      await handler();
+    } catch (error: unknown) {
+      errors.push(error);
+    }
+  }
+
+  if (errors.length > 0) {
+    for (const error of errors) {
+      console.error("Shutdown handler failed:", error);
+    }
   }
 }
 

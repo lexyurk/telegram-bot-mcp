@@ -1,6 +1,10 @@
 import type { RequestInfo } from "@modelcontextprotocol/sdk/types.js";
 
-import { resolveToolRequestConfig } from "../tools/shared.js";
+import {
+  resolveToolRequestConfig,
+  withOptionalRequestInfo,
+  withOptionalToolChatId,
+} from "../tools/shared.js";
 import type {
   ResolvedRequestConfig,
   RuntimeConfig,
@@ -22,26 +26,6 @@ export interface RequestToolContext {
     resolvedConfig: ResolvedRequestConfig;
     service: TelegramService;
   };
-}
-
-function withOptionalRequestInfo(
-  requestInfo: RequestInfo | undefined,
-): { requestInfo?: RequestInfo } {
-  if (requestInfo === undefined) {
-    return {};
-  }
-
-  return { requestInfo };
-}
-
-function withOptionalToolChatId(
-  toolChatId: string | undefined,
-): { toolChatId?: string } {
-  if (toolChatId === undefined) {
-    return {};
-  }
-
-  return { toolChatId };
 }
 
 export function createRequestToolContext(options: {

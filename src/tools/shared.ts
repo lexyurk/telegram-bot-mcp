@@ -23,6 +23,26 @@ function withOptionalProperty<T extends object, K extends string, V>(
   };
 }
 
+export function withOptionalRequestInfo(
+  requestInfo: RequestInfo | undefined,
+): { requestInfo?: RequestInfo } {
+  if (requestInfo === undefined) {
+    return {};
+  }
+
+  return { requestInfo };
+}
+
+export function withOptionalToolChatId(
+  toolChatId: string | undefined,
+): { toolChatId?: string } {
+  if (toolChatId === undefined) {
+    return {};
+  }
+
+  return { toolChatId };
+}
+
 export function resolveToolRequestConfig(options: {
   runtimeConfig: RuntimeConfig;
   requestInfo?: RequestInfo;
