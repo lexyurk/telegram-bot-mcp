@@ -13,7 +13,6 @@ It supports:
 - secure chat ID validation
 - structured stderr-only logging
 - default chat ID configuration plus per-request `chatId` override
-- `npx`-friendly stdio usage
 - HTTP transport with header-based bot token / default chat ID configuration
 
 ## Features
@@ -60,7 +59,6 @@ The server reads these variables:
 ```bash
 TELEGRAM_BOT_TOKEN=123456789:your-bot-token
 TELEGRAM_DEFAULT_CHAT_ID=123456789
-TELEGRAM_BOT_MCP_TRANSPORT=http
 TELEGRAM_BOT_MCP_PORT=3000
 TELEGRAM_BOT_MCP_LOG_LEVEL=info
 ```
@@ -94,10 +92,9 @@ Aliases also accepted:
 
 ## Usage
 
-### HTTP mode
+### Start the server
 
 ```bash
-TELEGRAM_BOT_MCP_TRANSPORT=http \
 TELEGRAM_BOT_MCP_PORT=3000 \
 npx telegram-bot-mcp
 ```
