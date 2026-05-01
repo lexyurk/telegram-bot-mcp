@@ -130,6 +130,7 @@ export class TelegramService {
         request.requestId,
         toTelegramError("Failed to send Telegram question.", error),
       );
+      answerPromise.catch(() => {});
       throw toTelegramError("Failed to send Telegram question.", error);
     }
 
@@ -234,7 +235,7 @@ export class TelegramService {
       return;
     }
 
-    this.pollingStartup = (async () => {
+    const startup = (async () => {
       try {
         this.logger.info("Starting Telegram polling for reply handling.");
 
@@ -256,6 +257,9 @@ export class TelegramService {
         }
       } catch (error: unknown) {
         this.runner = undefined;
+        if (this.pollingStartup === startup) {
+          this.pollingStartup = undefined;
+        }
 
         if (isPollingConflict(error)) {
           throw new TelegramError(
@@ -264,11 +268,11 @@ export class TelegramService {
         }
 
         throw toTelegramError("Failed to start Telegram polling.", error);
-      } finally {
-        this.pollingStartup = undefined;
       }
     })();
 
-    await this.pollingStartup;
+    this.pollingStartup = startup;
+
+    await startup;
   }
 }

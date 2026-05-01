@@ -1,11 +1,4 @@
 import type { RequestInfo } from "@modelcontextprotocol/sdk/types.js";
-import type {
-  RequestHandlerExtra,
-} from "@modelcontextprotocol/sdk/shared/protocol.js";
-import type {
-  ServerNotification,
-  ServerRequest,
-} from "@modelcontextprotocol/sdk/types.js";
 
 import { parseHeaderConfig } from "../config/headers.js";
 import { resolveRequestConfig } from "../config/resolve-request-config.js";
@@ -54,27 +47,5 @@ export function resolveToolRequestConfig(options: {
   return {
     headerConfig,
     resolvedConfig,
-  };
-}
-
-export function createProgressNotifier(
-  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
-): ((progress: number, message: string) => Promise<void>) | undefined {
-  const progressToken = extra._meta?.progressToken;
-
-  if (progressToken === undefined) {
-    return undefined;
-  }
-
-  return async (progress: number, message: string) => {
-    await extra.sendNotification({
-      method: "notifications/progress",
-      params: {
-        progressToken,
-        progress,
-        total: 100,
-        message,
-      },
-    });
   };
 }
