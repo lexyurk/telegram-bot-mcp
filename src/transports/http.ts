@@ -173,7 +173,3 @@ export async function startHttpServer(
     );
   });
 }
-
-export function buildHttpServer(services: HttpTransportServices) {
-  return startHttpServer(services);
-}

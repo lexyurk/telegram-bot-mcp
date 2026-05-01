@@ -25,8 +25,7 @@ function toTelegramError(message: string, error: unknown): TelegramError {
   }
 
   return new TelegramError(message, {
-    cause:
-      error instanceof Error ? error.message : "Unknown Telegram error",
+    cause: error instanceof Error ? error : "Unknown Telegram error",
   });
 }
 
@@ -45,6 +44,8 @@ export class TelegramService {
 
   private readonly pendingQuestions = new PendingQuestionStore();
 
+  private readonly replyHandler: (message: Message) => void;
+
   private runner: RunnerHandle | undefined;
 
   private pollingStartup: Promise<void> | undefined;
@@ -58,6 +59,7 @@ export class TelegramService {
       component: "telegram-service",
       tokenFingerprint: botToken.slice(-6),
     });
+    this.replyHandler = createReplyHandler(this.pendingQuestions, this.logger);
 
     this.bot.on("message", async (context) => {
       const message = context.message;
@@ -66,9 +68,7 @@ export class TelegramService {
         return;
       }
 
-      createReplyHandler(this.pendingQuestions, this.logger)(
-        message as Message,
-      );
+      this.replyHandler(message as Message);
     });
 
     addShutdownHandler(async () => {
