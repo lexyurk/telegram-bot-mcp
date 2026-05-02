@@ -1,0 +1,67 @@
+{
+  "name": "telegram-bot-mcp",
+  "version": "0.1.0",
+  "description": "TypeScript MCP server for Telegram-based questions, notifications, and file delivery",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    }
+  },
+  "bin": {
+    "telegram-bot-mcp": "./dist/bin/telegram-bot-mcp.js",
+    "telegram-bot-mcp-chat-id": "./dist/bin/get-chat-id.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist coverage",
+    "dev": "tsx --watch src/bin/telegram-bot-mcp.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "telegram",
+    "bot",
+    "typescript"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@grammyjs/runner": "^2.0.3",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "grammy": "^1.38.3",
+    "mime-types": "^3.0.1",
+    "pino": "^9.7.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/mime-types": "^3.0.1",
+    "@types/node": "^24.9.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
