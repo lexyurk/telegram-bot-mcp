@@ -7,6 +7,7 @@ import type {
 
 import type { AskUserArgs } from "../types/tool-args.js";
 import type { ToolServices } from "../server/tool-context.js";
+import type { AskUserRequest } from "../types/telegram.js";
 import {
   resolveToolRequestConfig,
   withOptionalRequestInfo,
@@ -66,17 +67,23 @@ export async function askUserToolHandler(
     await notifyProgress(5, "Sending Telegram question");
   }
 
-  const answer = await telegramService.askUser(
-    {
-      chatId: resolvedConfig.effectiveChatId,
-      question: args.question,
-      requestId: String(extra.requestId),
-    },
-    {
-      signal: extra.signal,
-      ...withOptionalProgressHandler(notifyProgress),
-    },
-  );
+  const askRequest: AskUserRequest = {
+    chatId: resolvedConfig.effectiveChatId,
+    question: args.question,
+    requestId: String(extra.requestId),
+  };
+
+  if (args.parseMode !== undefined) {
+    askRequest.parseMode = args.parseMode;
+  }
+  if (args.timeoutSeconds !== undefined) {
+    askRequest.timeoutMs = args.timeoutSeconds * 1000;
+  }
+
+  const answer = await telegramService.askUser(askRequest, {
+    signal: extra.signal,
+    ...withOptionalProgressHandler(notifyProgress),
+  });
 
   services.logger.info(
     {

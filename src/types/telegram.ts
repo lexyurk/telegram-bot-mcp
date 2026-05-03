@@ -2,6 +2,8 @@ export type ChatId = string;
 
 export type TelegramMediaKind = "document" | "photo" | "video";
 
+export type TelegramParseMode = "HTML" | "MarkdownV2";
+
 export interface TelegramSendMessageResult {
   messageId: number;
   chatId: ChatId;
@@ -36,25 +38,24 @@ export interface AskUserRequest {
   chatId: ChatId;
   question: string;
   requestId: string;
+  parseMode?: TelegramParseMode | undefined;
+  timeoutMs?: number | undefined;
 }
 
 export interface TelegramSendMessageRequest {
   chatId: ChatId;
   text: string;
-  options:
-    | {
-        reply_markup: {
-          force_reply: true;
-          selective?: boolean;
-        };
-      }
-    | undefined;
+  parseMode?: TelegramParseMode | undefined;
+  silent?: boolean | undefined;
+  forceReply?: boolean | undefined;
 }
 
 export interface TelegramSendFileRequest {
   chatId: ChatId;
   filePath: string;
   caption?: string | undefined;
+  parseMode?: TelegramParseMode | undefined;
+  silent?: boolean | undefined;
 }
 
 export interface AskUserResponse extends TelegramSendMessageResult {

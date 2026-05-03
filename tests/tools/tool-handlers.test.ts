@@ -280,4 +280,111 @@ describe("tool handlers", () => {
     expect(getTextContent(imageResult)).toContain("Image sent successfully");
     expect(getTextContent(videoResult)).toContain("Video sent successfully");
   });
+
+  it("passes parseMode and silent through notify_user", async () => {
+    const sendMessage = vi.fn().mockResolvedValue({
+      chatId: "env-chat",
+      messageId: 11,
+    });
+
+    const context = {
+      logger,
+      requestId: "req-notify-fmt",
+      resolve() {
+        return {
+          resolvedConfig: createResolvedConfig({
+            botToken: "env-token",
+            effectiveChatId: "env-chat",
+            transportKind: "http",
+          }),
+          service: createMinimalService({ sendMessage }),
+        };
+      },
+    } as RequestToolContext;
+
+    await createNotifyUserTool(context)({
+      message: "<b>done</b>",
+      parseMode: "HTML",
+      silent: true,
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      chatId: "env-chat",
+      text: "<b>done</b>",
+      parseMode: "HTML",
+      silent: true,
+    });
+  });
+
+  it("passes parseMode and silent through send_image", async () => {
+    const sendImage = vi.fn().mockResolvedValue({ chatId: "c", messageId: 7 });
+
+    const context = {
+      logger,
+      requestId: "req-img-fmt",
+      resolve() {
+        return {
+          resolvedConfig: createResolvedConfig({ effectiveChatId: "c" }),
+          service: createMinimalService({ sendImage }),
+        };
+      },
+    } as RequestToolContext;
+
+    await createSendImageTool(context)({
+      filePath: "/tmp/x.png",
+      caption: "<i>shot</i>",
+      parseMode: "HTML",
+      silent: true,
+    });
+
+    expect(sendImage).toHaveBeenCalledWith({
+      chatId: "c",
+      filePath: "/tmp/x.png",
+      caption: "<i>shot</i>",
+      parseMode: "HTML",
+      silent: true,
+    });
+  });
+
+  it("passes parseMode and timeoutSeconds through ask_user", async () => {
+    const askUser = vi.fn<TelegramServiceLike["askUser"]>();
+    askUser.mockResolvedValue({
+      answer: "ok",
+      chatId: "env-chat",
+      messageId: 1,
+      outboundMessageId: 1,
+    });
+
+    const getService = vi.fn().mockReturnValue({ askUser });
+    const extra = createExtra();
+
+    const telegramRegistry = {
+      getService,
+      shutdownAll: vi.fn(async () => undefined),
+    } as unknown as ToolServices["telegramRegistry"];
+
+    await askUserToolHandler(
+      {
+        question: "<b>Approve?</b>",
+        parseMode: "HTML",
+        timeoutSeconds: 30,
+      },
+      extra,
+      {
+        logger,
+        runtimeConfig,
+        telegramRegistry,
+      },
+    );
+
+    expect(askUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatId: "env-chat",
+        question: "<b>Approve?</b>",
+        parseMode: "HTML",
+        timeoutMs: 30_000,
+      }),
+      expect.objectContaining({ signal: extra.signal }),
+    );
+  });
 });

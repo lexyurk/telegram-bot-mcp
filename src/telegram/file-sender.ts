@@ -6,6 +6,7 @@ import { TelegramError } from "../errors/telegram-error.js";
 import type {
   ChatId,
   TelegramMediaKind,
+  TelegramParseMode,
   TelegramSendMessageResult,
 } from "../types/telegram.js";
 import { assertReadableFile } from "../utils/fs.js";
@@ -15,12 +16,26 @@ import {
   getTelegramMediaKindForPath,
 } from "../utils/mime.js";
 
-function withOptionalCaption(caption: string | undefined): { caption?: string } {
-  if (caption === undefined) {
-    return {};
+function buildSendOptions(
+  caption: string | undefined,
+  parseMode: TelegramParseMode | undefined,
+  silent: boolean | undefined,
+): Record<string, unknown> {
+  const options: Record<string, unknown> = {};
+
+  if (caption !== undefined) {
+    options.caption = caption;
   }
 
-  return { caption };
+  if (parseMode !== undefined) {
+    options.parse_mode = parseMode;
+  }
+
+  if (silent === true) {
+    options.disable_notification = true;
+  }
+
+  return options;
 }
 
 function toTelegramSendResult(message: Message): TelegramSendMessageResult {
@@ -35,9 +50,12 @@ export async function sendTelegramMedia(options: {
   chatId: ChatId;
   filePath: string;
   caption?: string | undefined;
+  parseMode?: TelegramParseMode | undefined;
+  silent?: boolean | undefined;
   mediaKind: TelegramMediaKind;
 }): Promise<TelegramSendMessageResult> {
-  const { api, chatId, filePath, caption, mediaKind } = options;
+  const { api, chatId, filePath, caption, parseMode, silent, mediaKind } =
+    options;
 
   await assertReadableFile(filePath);
 
@@ -46,36 +64,27 @@ export async function sendTelegramMedia(options: {
   }
 
   const inputFile = new InputFile(filePath, getFilenameFromPath(filePath));
+  const sendOptions = buildSendOptions(caption, parseMode, silent);
 
   try {
     switch (mediaKind) {
       case "document": {
-        const message = await api.sendDocument(
-          chatId,
-          inputFile,
-          withOptionalCaption(caption),
-        );
+        const message = await api.sendDocument(chatId, inputFile, sendOptions);
         return toTelegramSendResult(message);
       }
       case "photo": {
-        const message = await api.sendPhoto(
-          chatId,
-          inputFile,
-          withOptionalCaption(caption),
-        );
+        const message = await api.sendPhoto(chatId, inputFile, sendOptions);
         return toTelegramSendResult(message);
       }
       case "video": {
-        const message = await api.sendVideo(
-          chatId,
-          inputFile,
-          withOptionalCaption(caption),
-        );
+        const message = await api.sendVideo(chatId, inputFile, sendOptions);
         return toTelegramSendResult(message);
       }
       default: {
         const exhaustiveCheck: never = mediaKind;
-        throw new TelegramError(`Unsupported media kind: ${String(exhaustiveCheck)}`);
+        throw new TelegramError(
+          `Unsupported media kind: ${String(exhaustiveCheck)}`,
+        );
       }
     }
   } catch (error) {

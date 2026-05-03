@@ -2,22 +2,35 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 import type { SendFileArgs } from "../types/tool-args.js";
 import type { RequestToolContext } from "../server/tool-context.js";
+import type { TelegramSendFileRequest } from "../types/telegram.js";
 
-function withOptionalCaption(filePath: string, chatId: string, caption?: string) {
-  return caption === undefined
-    ? { chatId, filePath }
-    : { chatId, filePath, caption };
+function buildRequest(
+  chatId: string,
+  args: SendFileArgs,
+): TelegramSendFileRequest {
+  const request: TelegramSendFileRequest = {
+    chatId,
+    filePath: args.filePath,
+  };
+
+  if (args.caption !== undefined) {
+    request.caption = args.caption;
+  }
+  if (args.parseMode !== undefined) {
+    request.parseMode = args.parseMode;
+  }
+  if (args.silent === true) {
+    request.silent = true;
+  }
+
+  return request;
 }
 
 export function createSendFileTool(context: RequestToolContext) {
   return async (args: SendFileArgs): Promise<CallToolResult> => {
     const { resolvedConfig, service } = context.resolve(args.chatId);
     const result = await service.sendFile(
-      withOptionalCaption(
-        args.filePath,
-        resolvedConfig.effectiveChatId,
-        args.caption,
-      ),
+      buildRequest(resolvedConfig.effectiveChatId, args),
     );
 
     context.logger.info(

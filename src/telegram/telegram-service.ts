@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, GrammyError } from "grammy";
 import type { Message } from "grammy/types";
 import { run, type RunnerHandle } from "@grammyjs/runner";
 
@@ -18,6 +18,8 @@ import { PendingQuestionStore } from "./pending-question-store.js";
 import { createReplyHandler } from "./update-router.js";
 
 const WAITING_PROGRESS_INTERVAL_MS = 30_000;
+const RATE_LIMIT_MAX_RETRIES = 1;
+const RATE_LIMIT_FALLBACK_MS = 1_000;
 
 function toTelegramError(message: string, error: unknown): TelegramError {
   if (error instanceof TelegramError) {
@@ -35,6 +37,48 @@ function isPollingConflict(error: unknown): boolean {
     error.message.includes("409") &&
     error.message.includes("terminated by other getUpdates request")
   );
+}
+
+async function withRateLimitRetry<T>(
+  operation: () => Promise<T>,
+  logger: AppLogger,
+): Promise<T> {
+  let attempt = 0;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      return await operation();
+    } catch (error: unknown) {
+      if (
+        error instanceof GrammyError &&
+        error.error_code === 429 &&
+        attempt < RATE_LIMIT_MAX_RETRIES
+      ) {
+        const retryAfterSeconds =
+          (error.parameters as { retry_after?: number } | undefined)
+            ?.retry_after;
+        const waitMs =
+          retryAfterSeconds !== undefined
+            ? retryAfterSeconds * 1000
+            : RATE_LIMIT_FALLBACK_MS;
+
+        logger.warn(
+          { waitMs, attempt: attempt + 1 },
+          "Telegram rate limit hit, retrying after delay.",
+        );
+
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, waitMs);
+        });
+
+        attempt += 1;
+        continue;
+      }
+
+      throw error;
+    }
+  }
 }
 
 export class TelegramService {
@@ -79,13 +123,27 @@ export class TelegramService {
   public async sendMessage(
     request: TelegramSendMessageRequest,
   ): Promise<TelegramSendMessageResult> {
+    const sendOptions: Record<string, unknown> = {};
+
+    if (request.parseMode !== undefined) {
+      sendOptions.parse_mode = request.parseMode;
+    }
+
+    if (request.silent === true) {
+      sendOptions.disable_notification = true;
+    }
+
+    if (request.forceReply === true) {
+      sendOptions.reply_markup = {
+        force_reply: true,
+        selective: true,
+      };
+    }
+
     try {
-      const sendOptions =
-        request.options === undefined ? undefined : request.options;
-      const message = await this.bot.api.sendMessage(
-        request.chatId,
-        request.text,
-        sendOptions,
+      const message = await withRateLimitRetry(
+        () => this.bot.api.sendMessage(request.chatId, request.text, sendOptions),
+        this.logger,
       );
 
       return {
@@ -114,12 +172,10 @@ export class TelegramService {
       message = await this.sendMessage({
         chatId: request.chatId,
         text: request.question,
-        options: {
-          reply_markup: {
-            force_reply: true,
-            selective: true,
-          },
-        },
+        forceReply: true,
+        ...(request.parseMode === undefined
+          ? {}
+          : { parseMode: request.parseMode }),
       });
       this.pendingQuestions.bindOutgoingMessage(
         request.requestId,
@@ -138,11 +194,27 @@ export class TelegramService {
       options?.onProgress === undefined
         ? undefined
         : setInterval(() => {
-            void options.onProgress?.(
-              50,
-              "Waiting for Telegram reply",
-            );
+            void options.onProgress?.(50, "Waiting for Telegram reply");
           }, WAITING_PROGRESS_INTERVAL_MS);
+
+    const timeoutHandle =
+      request.timeoutMs === undefined
+        ? undefined
+        : setTimeout(() => {
+            this.pendingQuestions.rejectPendingQuestion(
+              request.requestId,
+              new TelegramError(
+                `Telegram question timed out after ${String(request.timeoutMs)}ms before a reply arrived.`,
+                {
+                  details: {
+                    requestId: request.requestId,
+                    chatId: request.chatId,
+                    timeoutMs: request.timeoutMs,
+                  },
+                },
+              ),
+            );
+          }, request.timeoutMs);
 
     if (options?.signal) {
       options.signal.addEventListener(
@@ -172,43 +244,70 @@ export class TelegramService {
       if (progressInterval !== undefined) {
         clearInterval(progressInterval);
       }
+      if (timeoutHandle !== undefined) {
+        clearTimeout(timeoutHandle);
+      }
     }
   }
 
   public async sendFile(
     request: TelegramSendFileRequest,
   ): Promise<TelegramSendMessageResult> {
-    return sendTelegramMedia({
-      api: this.bot.api,
-      chatId: request.chatId,
-      filePath: request.filePath,
-      mediaKind: "document",
-      ...(request.caption === undefined ? {} : { caption: request.caption }),
-    });
+    return withRateLimitRetry(
+      () =>
+        sendTelegramMedia({
+          api: this.bot.api,
+          chatId: request.chatId,
+          filePath: request.filePath,
+          mediaKind: "document",
+          ...(request.caption === undefined ? {} : { caption: request.caption }),
+          ...(request.parseMode === undefined
+            ? {}
+            : { parseMode: request.parseMode }),
+          ...(request.silent === true ? { silent: true } : {}),
+        }),
+      this.logger,
+    );
   }
 
   public async sendImage(
     request: TelegramSendFileRequest,
   ): Promise<TelegramSendMessageResult> {
-    return sendTelegramMedia({
-      api: this.bot.api,
-      chatId: request.chatId,
-      filePath: request.filePath,
-      mediaKind: "photo",
-      ...(request.caption === undefined ? {} : { caption: request.caption }),
-    });
+    return withRateLimitRetry(
+      () =>
+        sendTelegramMedia({
+          api: this.bot.api,
+          chatId: request.chatId,
+          filePath: request.filePath,
+          mediaKind: "photo",
+          ...(request.caption === undefined ? {} : { caption: request.caption }),
+          ...(request.parseMode === undefined
+            ? {}
+            : { parseMode: request.parseMode }),
+          ...(request.silent === true ? { silent: true } : {}),
+        }),
+      this.logger,
+    );
   }
 
   public async sendVideo(
     request: TelegramSendFileRequest,
   ): Promise<TelegramSendMessageResult> {
-    return sendTelegramMedia({
-      api: this.bot.api,
-      chatId: request.chatId,
-      filePath: request.filePath,
-      mediaKind: "video",
-      ...(request.caption === undefined ? {} : { caption: request.caption }),
-    });
+    return withRateLimitRetry(
+      () =>
+        sendTelegramMedia({
+          api: this.bot.api,
+          chatId: request.chatId,
+          filePath: request.filePath,
+          mediaKind: "video",
+          ...(request.caption === undefined ? {} : { caption: request.caption }),
+          ...(request.parseMode === undefined
+            ? {}
+            : { parseMode: request.parseMode }),
+          ...(request.silent === true ? { silent: true } : {}),
+        }),
+      this.logger,
+    );
   }
 
   public async shutdown(): Promise<void> {
@@ -235,7 +334,8 @@ export class TelegramService {
       return;
     }
 
-    const startup = (async () => {
+    let startup!: Promise<void>;
+    startup = (async () => {
       try {
         this.logger.info("Starting Telegram polling for reply handling.");
 

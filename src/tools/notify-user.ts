@@ -2,15 +2,26 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 import type { RequestToolContext } from "../server/tool-context.js";
 import type { NotifyUserArgs } from "../types/tool-args.js";
+import type { TelegramSendMessageRequest } from "../types/telegram.js";
 
 export function createNotifyUserTool(context: RequestToolContext) {
   return async (args: NotifyUserArgs): Promise<CallToolResult> => {
     const { resolvedConfig, service } = context.resolve(args.chatId);
-    const result = await service.sendMessage({
+
+    const request: TelegramSendMessageRequest = {
       chatId: resolvedConfig.effectiveChatId,
       text: args.message,
-      options: undefined,
-    });
+    };
+
+    if (args.parseMode !== undefined) {
+      request.parseMode = args.parseMode;
+    }
+
+    if (args.silent === true) {
+      request.silent = true;
+    }
+
+    const result = await service.sendMessage(request);
 
     context.logger.info(
       {

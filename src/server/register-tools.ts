@@ -8,9 +8,40 @@ import { createSendVideoTool } from "../tools/send-video.js";
 import { createRequestToolContext, type ToolServices } from "./tool-context.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-const chatIdSchema = z.string().trim().min(1).optional();
-const filePathSchema = z.string().trim().min(1);
-const captionSchema = z.string().trim().min(1).max(1024).optional();
+const chatIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .optional()
+  .describe(
+    "Optional Telegram chat ID. Overrides the default chat ID from header/env config.",
+  );
+const filePathSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .describe("Absolute path on the server's filesystem to the file to send.");
+const captionSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(1024)
+  .optional()
+  .describe(
+    "Optional caption shown beneath the media. Telegram limit: 1024 characters.",
+  );
+const parseModeSchema = z
+  .enum(["HTML", "MarkdownV2"])
+  .optional()
+  .describe(
+    "Optional Telegram parse mode for formatting (defaults to plain text). Use HTML for the most forgiving formatting.",
+  );
+const silentSchema = z
+  .boolean()
+  .optional()
+  .describe(
+    "When true, send the message silently (no notification sound on the user's device).",
+  );
 
 function withOptionalProperties<
   T extends object,
@@ -42,10 +73,26 @@ export function registerTools(options: RegisterToolsOptions): void {
     {
       title: "Ask User",
       description:
-        "Ask a Telegram user a question and wait indefinitely for a reply to the sent message.",
+        "Send a Telegram question to a user and wait for their reply. " +
+        "The user must reply directly to the bot's message (force_reply is set). " +
+        "Use this for human-in-the-loop confirmations, approvals, or open questions.",
       inputSchema: z.object({
-        question: z.string().trim().min(1),
+        question: z
+          .string()
+          .trim()
+          .min(1)
+          .describe("The question text sent to the user."),
         chatId: chatIdSchema,
+        parseMode: parseModeSchema,
+        timeoutSeconds: z
+          .number()
+          .int()
+          .min(1)
+          .max(86_400)
+          .optional()
+          .describe(
+            "Optional timeout in seconds. If unset the tool waits indefinitely (until the MCP client cancels).",
+          ),
       }),
     },
     async (args, extra) =>
@@ -56,6 +103,8 @@ export function registerTools(options: RegisterToolsOptions): void {
           },
           {
             chatId: args.chatId,
+            parseMode: args.parseMode,
+            timeoutSeconds: args.timeoutSeconds,
           },
         ),
         extra,
@@ -68,10 +117,17 @@ export function registerTools(options: RegisterToolsOptions): void {
     {
       title: "Notify User",
       description:
-        "Send a Telegram notification that does not require a response.",
+        "Send a Telegram notification message that does not require a response. " +
+        "Use for status updates, alerts, completion notices, and other one-way notifications.",
       inputSchema: z.object({
-        message: z.string().trim().min(1),
+        message: z
+          .string()
+          .trim()
+          .min(1)
+          .describe("The notification text to send."),
         chatId: chatIdSchema,
+        parseMode: parseModeSchema,
+        silent: silentSchema,
       }),
     },
     async (args, extra) => {
@@ -90,6 +146,8 @@ export function registerTools(options: RegisterToolsOptions): void {
           },
           {
             chatId: args.chatId,
+            parseMode: args.parseMode,
+            silent: args.silent,
           },
         ),
       );
@@ -100,11 +158,15 @@ export function registerTools(options: RegisterToolsOptions): void {
     "send_file",
     {
       title: "Send File",
-      description: "Send a generic file to a Telegram user.",
+      description:
+        "Send any file as a Telegram document. Use this for logs, reports, archives, or " +
+        "anything you want delivered as a downloadable attachment regardless of MIME type.",
       inputSchema: z.object({
         filePath: filePathSchema,
         caption: captionSchema,
         chatId: chatIdSchema,
+        parseMode: parseModeSchema,
+        silent: silentSchema,
       }),
     },
     async (args, extra) => {
@@ -124,6 +186,8 @@ export function registerTools(options: RegisterToolsOptions): void {
           {
             caption: args.caption,
             chatId: args.chatId,
+            parseMode: args.parseMode,
+            silent: args.silent,
           },
         ),
       );
@@ -134,11 +198,15 @@ export function registerTools(options: RegisterToolsOptions): void {
     "send_image",
     {
       title: "Send Image",
-      description: "Send an image to a Telegram user.",
+      description:
+        "Send an image (PNG/JPEG/GIF/WebP/etc.) to a Telegram user. " +
+        "Telegram will compress and display it inline.",
       inputSchema: z.object({
         filePath: filePathSchema,
         caption: captionSchema,
         chatId: chatIdSchema,
+        parseMode: parseModeSchema,
+        silent: silentSchema,
       }),
     },
     async (args, extra) => {
@@ -158,6 +226,8 @@ export function registerTools(options: RegisterToolsOptions): void {
           {
             caption: args.caption,
             chatId: args.chatId,
+            parseMode: args.parseMode,
+            silent: args.silent,
           },
         ),
       );
@@ -168,11 +238,15 @@ export function registerTools(options: RegisterToolsOptions): void {
     "send_video",
     {
       title: "Send Video",
-      description: "Send a video to a Telegram user.",
+      description:
+        "Send a video file (MP4/MOV/etc.) to a Telegram user. Telegram will display it inline " +
+        "with a thumbnail and player.",
       inputSchema: z.object({
         filePath: filePathSchema,
         caption: captionSchema,
         chatId: chatIdSchema,
+        parseMode: parseModeSchema,
+        silent: silentSchema,
       }),
     },
     async (args, extra) => {
@@ -192,6 +266,8 @@ export function registerTools(options: RegisterToolsOptions): void {
           {
             caption: args.caption,
             chatId: args.chatId,
+            parseMode: args.parseMode,
+            silent: args.silent,
           },
         ),
       );
