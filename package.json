@@ -1,6 +1,6 @@
 {
   "name": "@lexyurk/telegram-bot-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "TypeScript MCP server for Telegram-based questions, notifications, and file delivery",
   "type": "module",
   "main": "./dist/index.js",
