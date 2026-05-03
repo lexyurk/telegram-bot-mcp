@@ -16,8 +16,8 @@
     }
   },
   "bin": {
-    "telegram-bot-mcp": "./dist/bin/telegram-bot-mcp.js",
-    "telegram-bot-mcp-chat-id": "./dist/bin/get-chat-id.js"
+    "telegram-bot-mcp": "dist/bin/telegram-bot-mcp.js",
+    "telegram-bot-mcp-chat-id": "dist/bin/get-chat-id.js"
   },
   "files": [
     "dist",
