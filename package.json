@@ -35,6 +35,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "smoke": "tsx scripts/smoke.ts",
     "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "keywords": [
