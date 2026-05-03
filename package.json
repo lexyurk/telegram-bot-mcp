@@ -1,6 +1,6 @@
 {
-  "name": "telegram-bot-mcp",
-  "version": "0.1.0",
+  "name": "@lexyurk/telegram-bot-mcp",
+  "version": "0.2.0",
   "description": "TypeScript MCP server for Telegram-based questions, notifications, and file delivery",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,9 +42,22 @@
     "model-context-protocol",
     "telegram",
     "bot",
-    "typescript"
+    "typescript",
+    "notifications"
   ],
   "license": "MIT",
+  "author": "Alexey Yurkevich",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lexyurk/telegram-bot-mcp.git"
+  },
+  "homepage": "https://github.com/lexyurk/telegram-bot-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/lexyurk/telegram-bot-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@grammyjs/runner": "^2.0.3",
     "@modelcontextprotocol/sdk": "^1.29.0",

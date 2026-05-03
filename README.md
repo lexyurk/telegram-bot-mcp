@@ -38,7 +38,7 @@ This package is designed for **HTTP MCP transport** so Telegram configuration ca
 ### Run with npx
 
 ```bash
-npx telegram-bot-mcp
+npx @lexyurk/telegram-bot-mcp
 ```
 
 ### Local development
@@ -96,7 +96,7 @@ Aliases also accepted:
 
 ```bash
 TELEGRAM_BOT_MCP_PORT=3000 \
-npx telegram-bot-mcp
+npx @lexyurk/telegram-bot-mcp
 ```
 Example MCP client configuration:
 
@@ -179,7 +179,7 @@ You can print your Telegram chat ID with:
 
 ```bash
 TELEGRAM_BOT_TOKEN=123456789:your-bot-token \
-npx telegram-bot-mcp-chat-id
+npx -p @lexyurk/telegram-bot-mcp telegram-bot-mcp-chat-id
 ```
 
 Then send any message to your bot. The tool prints the chat ID and exits.
